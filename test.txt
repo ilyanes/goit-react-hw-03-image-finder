@@ -1,0 +1,18 @@
+{this.state.loading ? (
+            <Loader
+              type="TailSpin"
+              className="spinner"
+              color="#00BFFF"
+              height={50}
+              width={50}
+            />
+          ) : this.state.totalHits !== 0 ? (
+            <ImageGallery
+              totalHits={this.totalHits}
+              querry={this.state.querry}
+              onImageClick={this.onImageClick}
+              onLoadMore={this.state.page}
+            />
+          ) : (
+            toast.warn('No match found')
+          )}
