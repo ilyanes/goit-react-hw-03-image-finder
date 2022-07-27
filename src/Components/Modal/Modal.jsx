@@ -1,38 +1,39 @@
 import React, { Component } from 'react';
 import { createPortal } from 'react-dom';
-// import styles from './Modal.module.css';
-// import ContactForm from '../ContactForm/ContactForm.jsx';
 
 const modalRoot = document.querySelector('#modal-root');
 
-export default class Modal extends Component {
+class Modal extends Component {
   componentDidMount() {
-    console.log('Modal componentDidMount');
-    window.addEventListener('keydown', this.idEscapeEvent);
+    // console.log('ModalDidMount');
+    window.addEventListener('keydown', this.handleKeyDown);
   }
-
   componentWillUnmount() {
-    window.removeEventListener('keydown', this.idEscapeEvent);
+    // console.log('ModalUnMount');
+    window.removeEventListener('keydown', this.handleKeyDown);
   }
 
-  idEscapeEvent = e => {
+  handleKeyDown = e => {
     if (e.code === 'Escape') {
-      this.props.onToggleModal();
+      this.props.onClose();
     }
   };
 
-  onBackdropClick = e => {
+  handleBackdropClick = e => {
     if (e.currentTarget === e.target) {
-      this.props.onToggleModal();
+      this.props.onClose();
     }
   };
 
   render() {
+    const { handleBackdropClick } = this;
     return createPortal(
-      <div className="Overlay" onClick={this.onBackdropClick}>
+      <div className="Overlay" onClick={handleBackdropClick}>
         <div className="Modal">{this.props.children}</div>
       </div>,
       modalRoot,
     );
   }
 }
+
+export default Modal;

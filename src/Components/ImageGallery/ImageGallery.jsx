@@ -1,18 +1,122 @@
-import React, { Component } from 'react';
-import ImageGalleryItem from '../ImageGalleryItem/ImageGalleryItem';
+import { Component } from 'react';
+import Loader from 'react-loader-spinner';
+import fetchImages from '../../service/api';
+import scrollContent from '../../utils/scroll';
 
-export default class ImageGallery extends Component {
+import ImageGalleryList from '../ImageGalleryList/ImageGalleryList';
+import Button from '../Button/Button';
+import Modal from '../Modal/Modal';
+import { ShearchMessage, NothingFoundMessage } from '../Notices/Notices';
+
+class ImageGallery extends Component {
+  state = {
+    images: [],
+    page: 1,
+    loadMore: false,
+    error: null,
+    status: 'idle',
+    showModal: false,
+    largeImageURL: '',
+    imageAlt: '',
+  };
+
+  componentDidUpdate(prevProps, prevState) {
+    console.log(this.props);
+    const prevSearchQuery = prevProps.searchQuery;
+    const nextSearchQuery = this.props.searchQuery;
+    const prevPage = prevState.page;
+    const nextPage = this.state.page;
+
+    if (prevSearchQuery !== nextSearchQuery) {
+      this.setState({ status: 'pending' });
+
+      fetchImages(nextSearchQuery, nextPage)
+        .then(images => {
+          this.setState({
+            images: [...images],
+            loadMore: true,
+            status: 'resolved',
+          });
+        })
+        .catch(error => this.setState({ error, status: 'rejected' })); //== если не 404
+    }
+    if (prevPage !== nextPage) {
+      fetchImages(nextSearchQuery, nextPage)
+        .then(images => {
+          this.setState({
+            images: [...prevState.images, ...images],
+            loadMore: true,
+            status: 'resolved',
+          });
+          scrollContent();
+        })
+        .catch(error => this.setState({ error, status: 'rejected' })); //== если не 404
+    }
+  }
+
+  onLoadMore = () => {
+    const { page } = this.state;
+    this.setState({ page: page + 1 });
+  };
+
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  };
+
+  onImageClick = e => {
+    const dataSrc = e.target.dataset.src;
+    const alt = e.target.alt;
+    this.setState({
+      largeImageURL: dataSrc,
+      imageAlt: alt,
+      showModal: true,
+    });
+  };
+
   render() {
-    return (
-      <ul className="ImageGallery">
-        <ImageGalleryItem
-          querry={this.props.querry}
-          page={this.props.page}
-          totalHits={this.props.totalHits}
-          onClick={this.props.onClick}
-          loading={this.props.loading}
-        />
-      </ul>
-    );
+    const {
+      state: {
+        status,
+        error,
+        images,
+        loadMore,
+        showModal,
+        largeImageURL,
+        imageAlt,
+      },
+      onImageClick,
+      onLoadMore,
+      toggleModal,
+    } = this;
+
+    if (status === 'idle') return <ShearchMessage />;
+
+    if (status === 'pending')
+      return <Loader type="ThreeDots" color="#3f51b5" height={80} width={80} />;
+
+    if (status === 'rejected') return <h1>{error.message}</h1>;
+
+    if (status === 'resolved' && images.length < 1)
+      return <NothingFoundMessage />;
+
+    if (status === 'resolved')
+      return (
+        <div>
+          <ImageGalleryList images={images} onImageClick={onImageClick} />
+          {loadMore && <Button onClick={onLoadMore} />}
+
+          {showModal && (
+            <Modal onClose={toggleModal}>
+              <img
+                src={largeImageURL}
+                alt={imageAlt}
+                style={{ maxHeight: '80vh', background: 'white' }}
+              />
+            </Modal>
+          )}
+        </div>
+      );
   }
 }
+
+export default ImageGallery;
